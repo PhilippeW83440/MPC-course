@@ -1,0 +1,908 @@
+#LyX 2.3 created this file. For more info see http://www.lyx.org/
+\lyxformat 544
+\begin_document
+\begin_header
+\save_transient_properties true
+\origin unavailable
+\textclass article
+\begin_preamble
+\usepackage{algorithm,algpseudocode}
+\end_preamble
+\use_default_options true
+\maintain_unincluded_children false
+\language english
+\language_package default
+\inputencoding auto
+\fontencoding global
+\font_roman "default" "default"
+\font_sans "default" "default"
+\font_typewriter "default" "default"
+\font_math "auto" "auto"
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100 100
+\font_tt_scale 100 100
+\use_microtype false
+\use_dash_ligatures true
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\float_placement H
+\paperfontsize default
+\spacing single
+\use_hyperref false
+\papersize default
+\use_geometry false
+\use_package amsmath 1
+\use_package amssymb 1
+\use_package cancel 1
+\use_package esint 1
+\use_package mathdots 1
+\use_package mathtools 1
+\use_package mhchem 1
+\use_package stackrel 1
+\use_package stmaryrd 1
+\use_package undertilde 1
+\cite_engine biblatex
+\cite_engine_type numerical
+\biblio_style plain
+\biblatex_bibstyle numeric
+\biblatex_citestyle numeric
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\justification true
+\use_refstyle 1
+\use_minted 0
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\is_math_indent 0
+\math_numbering_side default
+\quotes_style english
+\dynamic_quotes 0
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Title
+Model Predictive Control
+\end_layout
+
+\begin_layout Author
+Philippe Weingertner for Polytech Sophia 
+\begin_inset Quotes eld
+\end_inset
+
+Conduite Autonome
+\begin_inset Quotes erd
+\end_inset
+
+ course
+\end_layout
+
+\begin_layout Standard
+\begin_inset CommandInset toc
+LatexCommand tableofcontents
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Model Predictive Control
+\end_layout
+
+\begin_layout Subsection
+MPC setup
+\end_layout
+
+\begin_layout Standard
+We deal with a 
+\series bold
+discrete
+\series default
+ or discretized problem considered over a 
+\series bold
+
+\begin_inset Formula $\mathbf{N}$
+\end_inset
+
+ steps horizon
+\series default
+.
+ Every step has a 
+\begin_inset Formula $dt$
+\end_inset
+
+ duration.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\underset{u_{t},u_{t+1},\ldots,u_{t+N-1}}{min}\sum_{k=t}^{t+N-1}l(x_{k},u_{k})
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\text{subj. to }\begin{cases}
+x_{k+1}=f(x_{k},u_{k}) & k=t,\ldots,t+N-1\\
+u_{k}\in\mathcal{U} & k=t,\ldots,t+N-1\\
+x_{k}\in\mathcal{X} & k=t,\ldots,t+N-1\\
+x_{t}=x(t) & k=t,\ldots,t+N-1
+\end{cases}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+With:
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $u$
+\end_inset
+
+ a control command e.g.
+ 
+\begin_inset Formula $u_{k}=[a_{x},a_{y}]^{T}$
+\end_inset
+
+ at time step 
+\begin_inset Formula $k$
+\end_inset
+
+ or 
+\begin_inset Formula $u_{k}=[a_{k},\delta_{k}]^{T}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $x_{k}$
+\end_inset
+
+ a state vector e.g.
+ 
+\begin_inset Formula $\mathbf{\mathbf{x}}_{k}=[x_{k},y_{k},x'_{k},y'_{k}]^{T}$
+\end_inset
+
+ or 
+\begin_inset Formula $x_{k}=[x,y,\theta,v]^{T}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $x_{k+1}=f(x_{k},u_{k})$
+\end_inset
+
+ usually corresponds to our vehicle dynamics model e.g.
+ 
+\begin_inset Formula $x_{k+1}=\begin{bmatrix}1 & 0 & dt & 0\\
+0 & 1 & 0 & dt\\
+0 & 0 & 1 & 0\\
+0 & 0 & 0 & 1
+\end{bmatrix}x_{k}+\begin{bmatrix}\frac{dt^{2}}{2} & 0\\
+0 & \frac{dt^{2}}{2}
+\end{bmatrix}u_{k}=Ax_{k}+Bu_{k}=f(x_{k},u_{k})$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+l is a cost function we want to optimize: examples include jerk (to optimize
+ comfort), difference with a planned trajectory, time to goal or a combination
+ of objectives
+\end_layout
+
+\begin_layout Standard
+We are solving 
+\begin_inset Formula $\underset{u_{t:t+N-1}}{min}\sum_{k=t}^{t+N-1}l(x_{k},u_{k})$
+\end_inset
+
+ and NOT 
+\begin_inset Formula $\underset{u_{[t:t+N-1]}}{min}\int_{t}^{t+N}l(x(\tau),u(\tau)d\tau$
+\end_inset
+
+.
+ Sooner or later you need to discretize anyways
+\end_layout
+
+\begin_layout Standard
+The algorithm will run at every time steps:
+\end_layout
+
+\begin_layout Itemize
+At time t:
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+Measure (or estimate) the current state
+\end_layout
+
+\begin_layout Itemize
+Find the optimal input sequence 
+\begin_inset Formula $U^{*}=\{u_{t}^{*},u_{t+1}^{*},u_{t+2}^{*},\ldots,u_{t+N-1}^{*}\}$
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Itemize
+Apply only 
+\begin_inset Formula $u(t)=u_{t}^{*}$
+\end_inset
+
+ and discard 
+\begin_inset Formula $u_{t+1}^{*},u_{t+2}^{*},\ldots,u_{t+N-1}^{*}$
+\end_inset
+
+
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+Repeat the same procedure at time 
+\begin_inset Formula $t+1$
+\end_inset
+
+
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+Even assuming perfect model and no disturbances: the predicted open-loop
+ trajectories are DIFFERENT than the closed-loop trajectories
+\end_layout
+
+\end_deeper
+\begin_layout Standard
+This algorithm has the following characteristics: multivariate, model based,
+ nonlinear, constraints based, predictive.
+ At each sampling time, starting at the current state, an open-loop optimal
+ control problem is solved over a finite horizon
+\end_layout
+
+\begin_layout Subsection
+MPC requirements
+\end_layout
+
+\begin_layout Standard
+In order to solve a MPC problem we need:
+\end_layout
+
+\begin_layout Itemize
+A discrete-time model of the system
+\end_layout
+
+\begin_layout Itemize
+A state observer
+\end_layout
+
+\begin_layout Itemize
+To setup an Optimization Problem
+\end_layout
+
+\begin_layout Itemize
+To solve an Optimization Problem (Matlab Optimization toolbox, NPSOL, cvxgen,
+ C++ Ipopt/CppAd tools)
+\end_layout
+
+\begin_layout Itemize
+Verifiy that the closed-loop system performs as desired (avoid infeasibility,
+ unstability)
+\end_layout
+
+\begin_layout Itemize
+Make sure it runs in real-time
+\end_layout
+
+\begin_layout Subsection
+MPC with Continuous Time models
+\end_layout
+
+\begin_layout Standard
+Use e.g.
+ Euler Discretization of Nonlinear Models.
+ Given a CT model 
+\begin_inset Formula 
+\[
+\begin{cases}
+\frac{d}{dt}x(t) & =f(x(t),u(t),t)\\
+y(t) & =h(x(t),u(t),t)
+\end{cases}
+\]
+
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Standard
+We approximate with finite differences:
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\frac{d}{dt}x(t)\approx\frac{x(t+\Delta t)-x(t)}{\Delta t}$
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $\Delta t$
+\end_inset
+
+ is the sampling time 
+\end_layout
+
+\begin_layout Standard
+Use Euler discretization or better discretization approaches (cf matlab:
+ help c2d) and check the performance of your model: data vs simulated.
+\end_layout
+
+\begin_layout Subsection
+MPC solution via Batch Approach
+\end_layout
+
+\begin_layout Itemize
+Write the equality constraints explicitly:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\begin{array}{c}
+x_{1}=f(x_{0},u_{0})\\
+\vdots\\
+x_{N}=f(x_{N-1},u_{N-1})
+\end{array}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+Then the optimal control problem:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\underset{u_{0},u_{1},\ldots,u_{N-1}}{min}\sum_{k=0}^{N-1}l(x_{k},u_{k})
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\text{subj. to }\begin{cases}
+x_{1}=f(x_{0},u_{0})\\
+\vdots\\
+x_{N}=f(x_{N-1},u_{N-1})\\
+u_{k}\in\mathcal{U} & k=0,\ldots,N-1\\
+x_{k}\in\mathcal{X} & k=0,\ldots,N-1\\
+x_{0}=x(0) & k=0,\ldots,t+N-1
+\end{cases}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+is a general nonlinear programming problem with variable
+\begin_inset Formula 
+\[
+\boxed{{u_{0},\ldots,u_{N-1},x_{1},\ldots,x_{N}}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+After resolution, 
+\series bold
+apply
+\series default
+ only: 
+\begin_inset Formula 
+\[
+\boxed{u_{0}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Optimization
+\end_layout
+
+\begin_layout Subsection
+Convex optimization problems
+\end_layout
+
+\begin_layout Itemize
+A set 
+\begin_inset Formula $\mathcal{S}$
+\end_inset
+
+ is convex if 
+\begin_inset Formula $\lambda z_{1}+(1-\lambda)z_{2}\in\mathcal{S}$
+\end_inset
+
+ for all 
+\begin_inset Formula $z_{1},z_{2}\in\mathcal{S},\lambda\in[0,1]$
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Itemize
+A function 
+\begin_inset Formula $f:\mathcal{S\rightarrow\mathbb{R}}$
+\end_inset
+
+ is convex if
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+\begin_inset Formula $\mathcal{S}$
+\end_inset
+
+ is convex
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $f(\lambda z_{1}+(1-\lambda)z_{2})\leq\lambda f(z_{1})+(1-\lambda)f(z_{2})$
+\end_inset
+
+ for all 
+\begin_inset Formula $z_{1},z_{2}\in\mathcal{S},\lambda\in[0,1]$
+\end_inset
+
+ 
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+A function 
+\begin_inset Formula $f:\mathcal{S\rightarrow\mathbb{R}}$
+\end_inset
+
+ is concave if 
+\begin_inset Formula $\mathcal{S}$
+\end_inset
+
+ is convex and 
+\begin_inset Formula $-f$
+\end_inset
+
+ is convex 
+\end_layout
+
+\begin_layout Itemize
+Some operations preserve convexity: intersection of convex sets, 
+\begin_inset Formula $\sum_{i=1}^{N}\alpha_{i}f_{i}$
+\end_inset
+
+, 
+\begin_inset Formula $f(Ax+b)$
+\end_inset
+
+ ...
+\end_layout
+
+\begin_layout Standard
+An optimization problem is said to be convex if the cost function 
+\begin_inset Formula $f$
+\end_inset
+
+ is convex over a convex set.
+ A fundamental property of convex optimization is that local optimizers
+ are also global optimizers.
+ It suffices to compute a local minimum to determine its global minimum.
+ Non-convex problems can be transformed into convex problems through a change
+ of variables and manipulations on cost and constraints.
+\end_layout
+
+\begin_layout Subsection
+Optimality conditions
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\underset{z}{min}f(z)
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\text{such that }\begin{cases}
+g_{i}(z)\leq0 & \text{for }i=1,\ldots,m\\
+h_{i}(z)=0 & \text{for }i=1,\ldots,p\\
+z\in\mathcal{Z}
+\end{cases}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+In general, an analytical solution does not exist
+\end_layout
+
+\begin_layout Itemize
+In general, global optimality is not guaranteed
+\end_layout
+
+\begin_layout Itemize
+Solutions are usualy computed by 
+\series bold
+recursive algorithms
+\series default
+ which start from an initial guess 
+\begin_inset Formula $z_{0}$
+\end_inset
+
+ and at step 
+\begin_inset Formula $k$
+\end_inset
+
+ generate a point 
+\begin_inset Formula $z_{k}$
+\end_inset
+
+ such that 
+\begin_inset Formula $\{f(z_{k})\}_{k=0,1,2,\ldots}$
+\end_inset
+
+ converges to 
+\begin_inset Formula $J^{*}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+
+\series bold
+Gradient descent algorithms
+\end_layout
+
+\begin_layout Itemize
+For unconstrained optimization problems, optimality conditions are:
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+\begin_inset Formula $\nabla f(z^{*})=0$
+\end_inset
+
+ is a necessary condition for 
+\begin_inset Formula $z^{*}$
+\end_inset
+
+ to be a local minimizer
+\end_layout
+
+\begin_layout Itemize
+If 
+\begin_inset Formula $\nabla f(z^{*})=0$
+\end_inset
+
+ and Hessian of 
+\begin_inset Formula $H_{f}(z^{*})$
+\end_inset
+
+ is positive definite then 
+\begin_inset Formula $z^{*}$
+\end_inset
+
+ is a local minimizer
+\end_layout
+
+\begin_layout Itemize
+If 
+\begin_inset Formula $f$
+\end_inset
+
+ is convex differentiable at 
+\begin_inset Formula $z^{*}$
+\end_inset
+
+ then 
+\begin_inset Formula $z^{*}$
+\end_inset
+
+ is a global minimizer iff 
+\begin_inset Formula $\nabla f(z^{*})=0$
+\end_inset
+
+ 
+\end_layout
+
+\end_deeper
+\begin_layout Itemize
+For constrained optimization problems, optimality KKT conditions are:
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+\begin_inset Formula $\nabla f(z^{*})+\sum_{i=1}^{m}u_{i}^{*}\nabla g_{i}(z^{*})+\sum_{j=1}^{p}v_{j}^{*}\nabla h_{i}(z^{*})=0$
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Itemize
+cf Lagrange Multipliers: 
+\begin_inset Formula 
+\[
+\text{min }f(x,y)\text{ s.t. }g_{1}(x,y)=0,\ldots,g_{k}(x,y)=0
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+\text{solve }\nabla f(a)=\sum_{i=1}^{k}\lambda_{i}\nabla g_{i}(a)
+\]
+
+\end_inset
+
+
+\begin_inset Formula 
+\[
+\text{2 eqs (partial derivatives) + k eqs g_{i}(x,y)=0 with 2+k unknowns (\ensuremath{x^{*},y^{*},\lambda_{1},\ldots,\lambda_{k})} }
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Graphics
+	filename lagrange.png
+	scale 25
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $u_{i}^{*}g_{i}(z^{*})=0$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $u_{i}^{*}\geq0$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $g_{i}(z^{*})\leq0$
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Formula $h_{j}(z^{*})=0$
+\end_inset
+
+
+\end_layout
+
+\end_deeper
+\begin_layout Subsection
+Optimization algorithm: overall intuitive presentation
+\end_layout
+
+\begin_layout Standard
+The algorithms are explained in an easy way here: 
+\end_layout
+
+\begin_layout Itemize
+\begin_inset CommandInset href
+LatexCommand href
+name "Constrained Optimization explained for HighSchool with Calculus AB"
+target "https://web.stanford.edu/group/sisl/k12/optimization/MO-unit5-pdfs/5.3phase1.pdf"
+literal "false"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+It is an iterative algorithm based on gradient descent where we check that
+ descent happens within the constraints region.
+ Bare minimum you need to know: computing Gradients, Jacobian, Hessian on
+ simple functions, roots finding, following the gradient.
+\end_layout
+
+\begin_layout Paragraph
+Example Gradient 
+\end_layout
+
+\begin_layout Standard
+James B.
+ was located at 
+\begin_inset Formula $(1,1)$
+\end_inset
+
+.
+ To choose his new location he calculates the gradient of the function 
+\begin_inset Formula $f(x,y)=x^{2}+y^{2}-3xy+x$
+\end_inset
+
+ at his current position and moves in the direction that is given by its
+ calculated gradient at the point and distance traveled is the length of
+ the gradient.
+ Where he will find himself after two movements?
+\end_layout
+
+\begin_layout Paragraph
+Example Jacobian 
+\end_layout
+
+\begin_layout Standard
+Compute the Jacobian of 
+\begin_inset Formula $f:\mathbb{R}^{2}\rightarrow\mathbb{R}^{2}$
+\end_inset
+
+ with 
+\begin_inset Formula $y_{1}=x_{1}x_{2},y_{2}=x_{1}+x_{2}$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Paragraph
+Example Hessian 
+\end_layout
+
+\begin_layout Standard
+Compute the Hessian of 
+\begin_inset Formula $f(x,y)=x^{3}-2xy-y^{6}$
+\end_inset
+
+ at the point 
+\begin_inset Formula $(1,2)$
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Optimization tools
+\end_layout
+
+\begin_layout Standard
+\begin_inset CommandInset href
+LatexCommand href
+name "MPC examples in Python and Matlab"
+target "https://osqp.org/docs/examples/mpc.html"
+literal "false"
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+NPSOL
+\end_layout
+
+\begin_layout Itemize
+\begin_inset CommandInset href
+LatexCommand href
+name "CVXGEN"
+target "https://cvxgen.com/docs/mpc.html"
+literal "false"
+
+\end_inset
+
+ 
+\end_layout
+
+\begin_layout Itemize
+Matlab Optimization toolbox: fmincon, cvx
+\end_layout
+
+\begin_layout Itemize
+C++ 
+\begin_inset CommandInset href
+LatexCommand href
+name "Ipopt with CppAd"
+target "https://www.coin-or.org/CppAD/Doc/ipopt_solve_get_started.cpp.htm"
+literal "false"
+
+\end_inset
+
+ (CppAd performs automatic differentiation when gradient, Jacobian, Hessian
+ are needed)
+\end_layout
+
+\begin_layout Standard
+\begin_inset Separator plain
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset CommandInset bibtex
+LatexCommand bibtex
+btprint "btPrintAll"
+bibfiles "mpc"
+
+\end_inset
+
+
+\end_layout
+
+\end_body
+\end_document
